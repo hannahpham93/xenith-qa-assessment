@@ -1,0 +1,27 @@
+# --- Secrets: never commit ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Node / Playwright ---
+node_modules/
+web-automation/test-results/
+web-automation/playwright-report/
+web-automation/blob-report/
+web-automation/playwright/.cache/
+npm-debug.log*
+
+# --- Java / Maven / Karate ---
+api-automation/target/
+*.class
+
+# --- Planning docs (not part of the Task B submission) ---
+docs/
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+*.log

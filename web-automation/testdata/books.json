@@ -1,0 +1,12 @@
+[
+  {
+    "scenario": "classic_dev_book",
+    "searchTerm": "Git Pocket Guide",
+    "expectedTitle": "Git Pocket Guide"
+  },
+  {
+    "scenario": "design_patterns_book",
+    "searchTerm": "Learning JavaScript Design Patterns",
+    "expectedTitle": "Learning JavaScript Design Patterns"
+  }
+]
