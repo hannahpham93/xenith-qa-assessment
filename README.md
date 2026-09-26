@@ -129,4 +129,3 @@ Surfaced by running the suites against the live app, not by reading a tutorial:
 | "Add To Your Collection" and "Back To Book Store" share the same `id="addNewRecordButton"`; the Logout button reuses `id="submit"` from unrelated forms. | Target by accessible role + name instead of id. |
 | Clicking a collection row's delete icon only opens a "Delete Book" dialog — it doesn't call the API. The dialog's OK button (`#closeSmallModal-ok`) fires the actual `DELETE`. | `ProfilePage.deleteBook()` clicks both; U7 covers Cancel. |
 | A failed login returns HTTP `200` with `status: "Failed"`, not `401`. | U2 checks the UI still shows the error; A6 pins the API behaviour. |
-# xenith-qa-assessment
