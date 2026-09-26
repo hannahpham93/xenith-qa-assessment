@@ -1,72 +1,73 @@
 Feature: Bookstore end-to-end flow (Account + BookStore API) - data-driven
 
-  # Register & login -> search & add book -> view collection -> delete ->
-  # logout, once per row of bookIndices.csv (each row picks a different
-  # catalog book by index). ISBNs are resolved live from
-  # GET /BookStore/v1/Books rather than hard-coded.
+  # The required flow at the API layer, once per row of bookIndices.csv
+  # (each row picks a different catalog book by index). ISBNs are resolved
+  # live from GET /BookStore/v1/Books rather than hard-coded.
+  # Covers test plan cases A1, A5, A11, B1, B2, B6.
 
   Background:
     * url baseUrl
-    * def password = 'Test@1234!'
 
-  Scenario Outline: <scenario> - register, login, add catalog book #<bookIndex>, view, delete, logout
+  @P0
+  Scenario Outline: <scenario> - register, login, add catalog book #<bookIndex>, view, delete
 
-    * def randomUser = 'karate_user_' + java.lang.System.currentTimeMillis() + '_<bookIndex>'
+    * def userName = 'karate_' + java.lang.System.currentTimeMillis() + '_<bookIndex>'
 
-    # 1. Register & login
+    # A1 - Register
     Given path 'Account/v1/User'
-    And request { userName: '#(randomUser)', password: '#(password)' }
+    And request { userName: '#(userName)', password: '#(password)' }
     When method post
     Then status 201
+    And match response == { userID: '#uuid', username: '#(userName)', books: [] }
     * def userId = response.userID
+    * def user = { userId: '#(userId)', userName: '#(userName)', password: '#(password)' }
 
+    # A5 - Login
     Given path 'Account/v1/GenerateToken'
-    And request { userName: '#(randomUser)', password: '#(password)' }
+    And request { userName: '#(userName)', password: '#(password)' }
     When method post
     Then status 200
-    And match response.status == 'Success'
-    * def token = response.token
+    And match response contains { status: 'Success', token: '#string' }
+    * def auth = { Authorization: '#("Bearer " + response.token)' }
 
-    # 2. Search and add book to collection
+    # B1 - List catalog (search is client-side filtering over this list).
+    # Each book must match the BookModal schema from the Swagger contract.
     Given path 'BookStore/v1/Books'
     When method get
     Then status 200
-    * def targetBook = response.books[<bookIndex>]
-    * def isbn = targetBook.isbn
+    And match each response.books == read('classpath:bookstore/features/common/schemas/book.json')
+    * def isbn = response.books[<bookIndex>].isbn
 
+    # B2 - Add book to collection
     Given path 'BookStore/v1/Books'
-    And header Authorization = 'Bearer ' + token
+    And headers auth
     And request { userId: '#(userId)', collectionOfIsbns: [{ isbn: '#(isbn)' }] }
     When method post
     Then status 201
     And match response.books[0].isbn == isbn
 
-    # 3. See list of book collection
+    # A11 - View collection
     Given path 'Account/v1/User/' + userId
-    And header Authorization = 'Bearer ' + token
+    And headers auth
     When method get
     Then status 200
-    And match response.books[*].isbn contains isbn
+    And match response.books[*].isbn == [ '#(isbn)' ]
 
-    # 4. Delete book from collection
+    # B6 - Delete book, collection is empty again
     Given path 'BookStore/v1/Book'
-    And header Authorization = 'Bearer ' + token
+    And headers auth
     And request { isbn: '#(isbn)', userId: '#(userId)' }
     When method delete
     Then status 204
 
     Given path 'Account/v1/User/' + userId
-    And header Authorization = 'Bearer ' + token
+    And headers auth
     When method get
     Then status 200
     And match response.books == '#[0]'
 
-    # 5. Logout (client-side token discard) + cleanup so demoqa doesn't
-    # accumulate throwaway accounts from every test run.
-    Given path 'Account/v1/User/' + userId
-    And header Authorization = 'Bearer ' + token
-    When method delete
-    Then status 204
+    # Logout has no API endpoint (the UI only clears its cookie; plan F2),
+    # so it is covered by Playwright (U8). The user is deleted after the scenario.
 
     Examples:
     | read('classpath:bookstore/testdata/bookIndices.csv') |

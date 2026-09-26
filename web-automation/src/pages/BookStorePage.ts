@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
@@ -9,15 +9,9 @@ import { BasePage } from './BasePage';
  * correctly.
  */
 export class BookStorePage extends BasePage {
+  protected readonly path = '/books';
   private readonly searchBox = this.page.locator('#searchBox');
-
-  constructor(page: Page) {
-    super(page);
-  }
-
-  async open(): Promise<void> {
-    await this.goto('/books');
-  }
+  private readonly resultTitles = this.page.locator('[id^="see-book-"]');
 
   async searchBook(term: string): Promise<void> {
     await this.searchBox.fill(term);
@@ -25,5 +19,14 @@ export class BookStorePage extends BasePage {
 
   async openBookByTitle(title: string): Promise<void> {
     await this.page.locator(`[id="see-book-${title}"]`).click();
+  }
+
+  async expectOnlyResults(titles: string[]): Promise<void> {
+    await expect(this.resultTitles).toHaveText(titles);
+  }
+
+  /** No match renders an empty table ("Page 1 of 0"), not a message. */
+  async expectNoResults(): Promise<void> {
+    await expect(this.resultTitles).toHaveCount(0);
   }
 }

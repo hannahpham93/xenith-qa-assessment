@@ -1,12 +1,12 @@
 [
   {
-    "scenario": "classic_dev_book",
-    "searchTerm": "Git Pocket Guide",
+    "scenario": "lowercase_partial_term",
+    "searchTerm": "git",
     "expectedTitle": "Git Pocket Guide"
   },
   {
-    "scenario": "design_patterns_book",
-    "searchTerm": "Learning JavaScript Design Patterns",
+    "scenario": "multi_word_partial_term",
+    "searchTerm": "Design Patterns",
     "expectedTitle": "Learning JavaScript Design Patterns"
   }
 ]

@@ -7,6 +7,9 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
+  // A retry keeps the report useful, but a pass-on-retry still fails the
+  // run: the test plan's exit criterion is zero flaky tests.
+  failOnFlakyTests: !!process.env.CI,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: env.baseUrl,

@@ -1,11 +1,22 @@
 import { Locator, Page, Response } from '@playwright/test';
 
 /** Common behaviour shared by every Page Object. */
-export class BasePage {
+export abstract class BasePage {
+  /** Route of the page, for pages that can be opened directly. */
+  protected readonly path?: string;
+
   constructor(protected readonly page: Page) {}
 
-  async goto(path: string): Promise<void> {
-    await this.page.goto(path);
+  async open(): Promise<void> {
+    if (!this.path) {
+      throw new Error(`${this.constructor.name} has no direct route`);
+    }
+    await this.page.goto(this.path);
+  }
+
+  /** A book title rendered as its own text node (catalog, detail and profile pages). */
+  protected bookTitle(title: string): Locator {
+    return this.page.getByText(title, { exact: true });
   }
 
   /** Clicks a locator and resolves once the API call it triggers completes. */

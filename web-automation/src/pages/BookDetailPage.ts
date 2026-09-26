@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
@@ -13,15 +13,11 @@ export class BookDetailPage extends BasePage {
     name: 'Add To Your Collection',
   });
 
-  constructor(page: Page) {
-    super(page);
-  }
-
   async addToCollection(): Promise<void> {
     await this.clickAndWaitForResponse(this.addToCollectionButton, '/BookStore/v1/Books', 'POST');
   }
 
   async expectBookVisible(title: string): Promise<void> {
-    await expect(this.page.getByText(title, { exact: true })).toBeVisible();
+    await expect(this.bookTitle(title)).toBeVisible();
   }
 }

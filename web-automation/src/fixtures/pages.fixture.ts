@@ -1,70 +1,54 @@
 import { test as base } from '@playwright/test';
-import { RegisterPage } from '../pages/RegisterPage';
 import { LoginPage } from '../pages/LoginPage';
 import { BookStorePage } from '../pages/BookStorePage';
 import { BookDetailPage } from '../pages/BookDetailPage';
 import { ProfilePage } from '../pages/ProfilePage';
-import { deleteUser, generateToken } from '../utils/bookstoreApiClient';
+import { deleteUser, registerUser, RegisteredUser } from '../utils/bookstoreApiClient';
+import { generateTestUser } from '../utils/testDataFactory';
 
-export interface CreatedTestUser {
-  userId: string;
-  userName: string;
-  password: string;
+export interface TestUsers {
+  /** Registers a fresh user via the API. It is deleted after the test, pass or fail. */
+  create(): Promise<RegisteredUser>;
 }
 
-export interface ApiCleanup {
-  /** Register a user created during the test so it gets deleted afterwards, pass or fail. */
-  track(user: CreatedTestUser): void;
-}
-
-interface PageFixtures {
-  registerPage: RegisterPage;
+interface Fixtures {
   loginPage: LoginPage;
   bookStorePage: BookStorePage;
   bookDetailPage: BookDetailPage;
   profilePage: ProfilePage;
-  apiCleanup: ApiCleanup;
+  testUsers: TestUsers;
 }
 
 /**
- * Extends Playwright's base test with one fixture per Page Object, plus an
- * `apiCleanup` fixture that deletes every test user created during the run,
- * even if the test fails partway through.
+ * Extends Playwright's base test with one fixture per Page Object, plus a
+ * `testUsers` fixture that provisions users and deletes them on teardown.
  */
-export const test = base.extend<PageFixtures>({
-  registerPage: async ({ page }, use) => {
-    await use(new RegisterPage(page));
-  },
-  loginPage: async ({ page }, use) => {
-    await use(new LoginPage(page));
-  },
-  bookStorePage: async ({ page }, use) => {
-    await use(new BookStorePage(page));
-  },
-  bookDetailPage: async ({ page }, use) => {
-    await use(new BookDetailPage(page));
-  },
-  profilePage: async ({ page }, use) => {
-    await use(new ProfilePage(page));
-  },
-  apiCleanup: [
-    async ({}, use) => {
-      const createdUsers: CreatedTestUser[] = [];
-      await use({ track: (user) => createdUsers.push(user) });
+export const test = base.extend<Fixtures>({
+  loginPage: async ({ page }, use) => use(new LoginPage(page)),
+  bookStorePage: async ({ page }, use) => use(new BookStorePage(page)),
+  bookDetailPage: async ({ page }, use) => use(new BookDetailPage(page)),
+  profilePage: async ({ page }, use) => use(new ProfilePage(page)),
 
-      for (const user of createdUsers) {
-        try {
-          const token = await generateToken(user.userName, user.password);
-          await deleteUser(user.userId, token);
-        } catch (error) {
-          // Best-effort: never fail the test suite because cleanup of a
-          // throwaway demo account didn't succeed.
-          console.warn(`[apiCleanup] failed to delete test user ${user.userName}:`, error);
-        }
+  testUsers: async ({}, use) => {
+    const created: RegisteredUser[] = [];
+    await use({
+      create: async () => {
+        const user = await registerUser(generateTestUser());
+        created.push(user);
+        return user;
+      },
+    });
+
+    for (const user of created) {
+      try {
+        await deleteUser(user);
+      } catch (error) {
+        // Best-effort: never fail the suite because cleanup of a throwaway
+        // demo account didn't succeed.
+        console.warn(`[testUsers] failed to delete test user ${user.userName}:`, error);
       }
-    },
-    { auto: true },
-  ],
+    }
+  },
 });
 
 export { expect } from '@playwright/test';
